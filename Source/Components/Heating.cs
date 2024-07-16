@@ -23,13 +23,7 @@ internal class Heating : MonoBehaviour
     private const float HotThreshold = 65f;
     private const float SlightlyHotThreshold = 40f;
     
-    private Freezing? m_Freezing;
-    
-    private void Awake()
-    {
-        m_Freezing = GameManager.GetFreezingComponent();
-        CurrentHeating = Mathf.Clamp(CurrentHeating, 0, MaxHeating);
-    }
+    private void Awake() => CurrentHeating = Mathf.Clamp(CurrentHeating, 0, MaxHeating);
     
     internal HeatingLevel GetHeatingLevel()
     {
@@ -82,17 +76,13 @@ internal class Heating : MonoBehaviour
             return;
         }
         
-        if (m_Freezing?.m_CurrentFreezing is 0)
-        {
-            UpdateHeatingStatus();   
-        }
+        UpdateHeatingStatus();
     }
     
     private void UpdateHeatingStatus()
     {
-        if (m_Freezing is null) return;
-        
-        var bodyTemperature = m_Freezing.CalculateBodyTemperature();
+        var freezingComponent = GameManager.GetFreezingComponent();
+        var bodyTemperature = freezingComponent.CalculateBodyTemperature();
         var todHours = GameManager.GetTimeOfDayComponent().GetTODHours(Time.deltaTime);
         
         if (bodyTemperature >= TemperatureHeatingStarts)
@@ -118,6 +108,6 @@ internal class Heating : MonoBehaviour
         }
 
         CurrentHeating = Mathf.Clamp(CurrentHeating, 0f, MaxHeating);
-        Logging.Log($"Current Heating: {CurrentHeating}, Current Freezing: {m_Freezing.m_CurrentFreezing}");
+        Logging.Log($"Current Heating: {CurrentHeating}, Current Freezing: {freezingComponent.m_CurrentFreezing}");
     }
 }
