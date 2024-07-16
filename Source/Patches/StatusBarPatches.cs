@@ -4,12 +4,26 @@ namespace PlayerVitals.Patches;
 
 internal static class StatusBarPatches
 {
+    [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.Awake))]
+    private static class CloneFillSprite
+    {
+        private static void Postfix(StatusBar __instance)
+        {
+            if (__instance.m_StatusBarType != StatusBar.StatusBarType.Cold) return;
+
+            var overlay = UnityEngine.Object.Instantiate(__instance.m_FillSprite.gameObject, __instance.m_FillSprite.transform);
+            overlay.name = "Foreground2";
+            overlay.GetComponent<UISprite>().color = Color.red;
+            overlay.SetActive(false);
+        }
+    }
+    
     [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.GetFillValuesCold))]
     private static class UpdateFillValuesForHeating
     {
         private static void Postfix(StatusBar __instance, ref StatusBar.FillValues __result)
         {
-            var heatingComponent = GameManager.GetFreezingComponent().GetComponent<Heating>();
+            var heatingComponent = Heating.GetHeatingComponent();
 
             if (heatingComponent != null && heatingComponent.CurrentHeating > 0)
             {
@@ -19,7 +33,7 @@ internal static class StatusBarPatches
             }
         }
     }
-    
+
     [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.SetArrowBools))]
     private static class UpdateArrowsForHeating
     {
@@ -27,14 +41,14 @@ internal static class StatusBarPatches
         {
             if (__instance.m_StatusBarType != StatusBar.StatusBarType.Cold) return;
 
-            var heatingComponent = GameManager.GetFreezingComponent().GetComponent<Heating>();
+            var heatingComponent = Heating.GetHeatingComponent();
             if (heatingComponent != null && heatingComponent.CurrentHeating > 0)
             {
                 var heatingRate = heatingComponent.GetRateOfChange();
-                
+
                 Array.Clear(__instance.m_UpArrowsEnabled, 0, __instance.m_UpArrowsEnabled.Length);
                 Array.Clear(__instance.m_DownArrowsEnabled, 0, __instance.m_DownArrowsEnabled.Length);
-                
+
                 if (heatingRate > 0)
                 {
                     if (heatingRate > __instance.m_HighThreshold)
@@ -57,79 +71,19 @@ internal static class StatusBarPatches
             }
         }
     }
-    
-    /* --- */
-    /* Below here is code I was working on for updating the status bar UI, the circle thingy */
-    
-    // [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.Awake))]
-    // private static class StatusBarAwakePatch
-    // {
-    //     private static void Postfix(StatusBar __instance)
-    //     {
-    //         if (__instance.m_StatusBarType != StatusBar.StatusBarType.Cold) return;
-    //         
-    //         // Check if ForegroundHeating already exists
-    //         Transform existingHeating = __instance.transform.Find("ForegroundHeating");
-    //         if (existingHeating != null)
-    //         {
-    //             Logging.LogDebug($"ForegroundHeating already exists for Cold StatusBar: {__instance.gameObject.name}");
-    //             return;
-    //         }
-    //         
-    //         var heatingFillObj = GameObject.Instantiate(__instance.m_FillSprite.gameObject, __instance.m_FillSprite.transform.parent);
-    //         heatingFillObj.name = "ForegroundHeating";
-    //         var heatingFillSprite = heatingFillObj.GetComponent<UISprite>();
-    //         
-    //         heatingFillSprite.color = new Color(1f, 0.5f, 0f);
-    //         heatingFillObj.SetActive(false);
-    //         
-    //         Logging.LogDebug($"Created ForegroundHeating for Cold StatusBar: {__instance.gameObject.name}");
-    //     }
-    // }
-    //
-    // [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.Update))]
-    // private static class StatusBarUpdatePatch
-    // {
-    //     private static void Postfix(StatusBar __instance)
-    //     {
-    //         if (__instance.m_StatusBarType != StatusBar.StatusBarType.Cold) return;
-    //
-    //         var heatingComponent = GameManager.GetFreezingComponent().GetComponent<Heating>();
-    //         if (heatingComponent == null)
-    //         {
-    //             Logging.LogDebug("Heating component not found");
-    //             return;
-    //         }
-    //
-    //         // Search for ForegroundHeating in children
-    //         var heatingFillObj = __instance.transform.Find("ForegroundHeating");
-    //         if (heatingFillObj == null)
-    //         {
-    //             Logging.LogDebug($"ForegroundHeating object not found for StatusBar: {__instance.gameObject.name}");
-    //             return;
-    //         }
-    //
-    //         var heatingFillSprite = heatingFillObj.GetComponent<UISprite>();
-    //         if (heatingFillSprite == null)
-    //         {
-    //             Logging.LogDebug("UISprite component not found on ForegroundHeating");
-    //             return;
-    //         }
-    //
-    //         Logging.LogDebug($"StatusBar: {__instance.gameObject.name}, Current Heating: {heatingComponent.m_CurrentHeating}, Max Heating: {heatingComponent.m_MaxHeating}");
-    //
-    //         if (heatingComponent.m_CurrentHeating > 0)
-    //         {
-    //             var heatingFillAmount = heatingComponent.m_CurrentHeating / heatingComponent.m_MaxHeating;
-    //             heatingFillSprite.fillAmount = heatingFillAmount;
-    //             heatingFillObj.gameObject.SetActive(true);
-    //             Logging.LogDebug($"Set ForegroundHeating active for StatusBar: {__instance.gameObject.name}. Fill amount: {heatingFillAmount}");
-    //         }
-    //         else
-    //         {
-    //             heatingFillObj.gameObject.SetActive(false);
-    //             Logging.LogDebug($"Set ForegroundHeating inactive for StatusBar: {__instance.gameObject.name}");
-    //         }
-    //     }
-    // }
+
+    [HarmonyPatch(typeof(StatusBar), nameof(StatusBar.Update))]
+    private static class UpdateClonedSprite
+    {
+        private static void Postfix(StatusBar __instance)
+        {
+            if (__instance.m_StatusBarType != StatusBar.StatusBarType.Cold) return;
+
+            var overlay = __instance.m_FillSprite.transform.Find("Foreground2")?.gameObject;
+            if (overlay == null) return;
+
+            overlay.SetActive(true);
+            overlay.GetComponent<UISprite>().fillAmount = Mathf.Lerp(__instance.m_FillSpriteOffset, 1f - __instance.m_FillSpriteOffset, 1f - Heating.GetHeatingComponent().GetFillValueHeat());
+        }
+    }
 }

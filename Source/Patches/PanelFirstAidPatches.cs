@@ -9,7 +9,7 @@ internal static class PanelFirstAidPatches
     {
         private static void Postfix(Panel_FirstAid __instance)
         {
-            var heatingComponent = GameManager.GetFreezingComponent().GetComponent<Heating>();
+            var heatingComponent = Heating.GetHeatingComponent();
             if (heatingComponent.CurrentHeating > 0)
             {
                 __instance.m_ColdStatusLabel.text = Heating.GetHeatingLevelLocalizationKey(heatingComponent.GetHeatingLevel());

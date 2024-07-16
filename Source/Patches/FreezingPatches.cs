@@ -9,7 +9,7 @@ internal static class FreezingPatches
     {
         private static void Postfix(Freezing __instance)
         {
-            var heatingComponent = __instance.GetComponent<Heating>();
+            var heatingComponent = Heating.GetHeatingComponent();
             if (heatingComponent != null && heatingComponent.CurrentHeating > 0)
             {
                 __instance.m_CurrentFreezing = 0;   

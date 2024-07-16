@@ -24,6 +24,16 @@ internal class Heating : MonoBehaviour
     private const float SlightlyHotThreshold = 40f;
     
     private void Awake() => CurrentHeating = Mathf.Clamp(CurrentHeating, 0, MaxHeating);
+
+    internal float GetFillValueHeat()
+    {
+        return 1f - CurrentHeating / MaxHeating;
+    }
+    
+    internal static Heating GetHeatingComponent()
+    {
+        return GameManager.Instance().m_ConditionSystems.GetComponent<Heating>();
+    }
     
     internal HeatingLevel GetHeatingLevel()
     {
