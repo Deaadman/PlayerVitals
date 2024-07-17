@@ -1,5 +1,4 @@
 ﻿using PlayerVitals.Enums;
-using PlayerVitals.Utilities;
 
 namespace PlayerVitals.Components;
 
@@ -30,10 +29,7 @@ internal class Heating : MonoBehaviour
         return 1f - CurrentHeating / MaxHeating;
     }
     
-    internal static Heating GetHeatingComponent()
-    {
-        return GameManager.Instance().m_ConditionSystems.GetComponent<Heating>();
-    }
+    internal static Heating GetHeatingComponent() => GameManager.Instance().m_ConditionSystems.GetComponent<Heating>();
     
     internal HeatingLevel GetHeatingLevel()
     {
@@ -118,6 +114,5 @@ internal class Heating : MonoBehaviour
         }
 
         CurrentHeating = Mathf.Clamp(CurrentHeating, 0f, MaxHeating);
-        Logging.Log($"Current Heating: {CurrentHeating}, Current Freezing: {freezingComponent.m_CurrentFreezing}");
     }
 }
