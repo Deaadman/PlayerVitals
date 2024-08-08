@@ -1,4 +1,6 @@
-﻿using PlayerVitals.Enums;
+﻿using AfflictionComponent.Components;
+using PlayerVitals.Afflictions;
+using PlayerVitals.Enums;
 
 namespace PlayerVitals.Components;
 
@@ -21,13 +23,17 @@ internal class Heating : MonoBehaviour
     private const float VeryHotThreshold = 80f;
     private const float HotThreshold = 65f;
     private const float SlightlyHotThreshold = 40f;
-    
-    private void Awake() => CurrentHeating = Mathf.Clamp(CurrentHeating, 0, MaxHeating);
 
-    internal float GetFillValueHeat()
+    internal Heating() => CurrentHeating = Mathf.Clamp(CurrentHeating, 0, MaxHeating);
+
+    private void CheckHeatingRisk()
     {
-        return 1f - CurrentHeating / MaxHeating;
+        if (CurrentHeating >= 5 && !AfflictionManager.GetAfflictionManagerInstance().HasAfflictionOfType(typeof(HyperthermiaAffliction)))
+            _ = new HyperthermiaAffliction("Hyperthermia Risk", "Too Hot.", "Description.", "Cool Down.",
+                AfflictionBodyArea.Chest, "", true, false, 0f, true, false, [], []);
     }
+    
+    internal float GetFillValueHeat() => 1f - CurrentHeating / MaxHeating;
     
     internal static Heating GetHeatingComponent() => GameManager.Instance().m_ConditionSystems.GetComponent<Heating>();
     
@@ -57,7 +63,7 @@ internal class Heating : MonoBehaviour
     
     internal float GetRateOfChange()
     {
-        if (Utils.IsZero(CurrentHeatingPerHour, 0.0001f))
+        if (Utils.IsZero(CurrentHeatingPerHour))
         {
             if (CurrentHeating == 0f || Mathf.Approximately(CurrentHeating, MaxHeating))
             {
@@ -65,24 +71,20 @@ internal class Heating : MonoBehaviour
             }
             return -1f * CurrentCoolingPerHour;
         }
-        else
+
+        if (CurrentHeating == 0f || Mathf.Approximately(CurrentHeating, MaxHeating))
         {
-            if (CurrentHeating == 0f || Mathf.Approximately(CurrentHeating, MaxHeating))
-            {
-                return 0f;
-            }
-            return CurrentHeatingPerHour;
+            return 0f;
         }
+        return CurrentHeatingPerHour;
     }
     
     private void Update()
     {
-        if (GameManager.m_IsPaused || GameManager.GetPlayerManagerComponent().m_SuspendConditionUpdate || GameManager.s_IsGameplaySuspended)
-        {
-            return;
-        }
+        if (GameManager.m_IsPaused || GameManager.GetPlayerManagerComponent().m_SuspendConditionUpdate || GameManager.s_IsGameplaySuspended) return;
         
         UpdateHeatingStatus();
+        CheckHeatingRisk();
     }
     
     private void UpdateHeatingStatus()
@@ -105,13 +107,9 @@ internal class Heating : MonoBehaviour
         }
 
         if (CurrentHeatingPerHour > 0)
-        {
             CurrentHeating += CurrentHeatingPerHour * todHours;
-        }
         else
-        {
             CurrentHeating -= CurrentCoolingPerHour * todHours;
-        }
 
         CurrentHeating = Mathf.Clamp(CurrentHeating, 0f, MaxHeating);
     }

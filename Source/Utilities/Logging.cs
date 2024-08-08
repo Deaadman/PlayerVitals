@@ -2,7 +2,7 @@ using System.Text;
 
 namespace PlayerVitals.Utilities;
 
-internal class Logging
+internal static class Logging
 {
     internal static void Log(string message, params object[] parameters) => Melon<Mod>.Logger.Msg(message, parameters);
     internal static void LogDebug(string message, params object[] parameters) => Melon<Mod>.Logger.Msg($"[DEBUG] {message}", parameters);
